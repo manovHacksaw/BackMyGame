@@ -1,6 +1,5 @@
-Here's an updated version of the README that includes the future plans for **BackMyGame** and clarifies that it's a **crowdlending platform**:
 
----
+
 
 # BackMyGame 🎮💰
 
