@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { usePlaiaZone } from "../../context/PlaiaZone";
 import MetaMaskLoader from "@/components/MetaMaskLoader";
 import { useRouter } from "next/navigation";
+import { formatDateForContract, getMinDate } from "@/utils/date";
 
 const RequestFundsPage = () => {
   const {
@@ -55,22 +56,32 @@ const RequestFundsPage = () => {
         newErrors.repaymentAmount = "Repayment amount must be at least 0.5 ETH more than the target amount.";
       }
     }
+    if (!formData.deadline) {
+      newErrors.deadline = "Please select a deadline date.";
+    } else {
+      const selectedDate = new Date(formData.deadline);
+      const today = new Date();
+      if (selectedDate <= today) {
+        newErrors.deadline = "Deadline must be a future date.";
+      }
+    }
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0; // Return true if no errors
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return; // Prevent submission if validation fails
+    if (!validateForm()) return;
 
     try {
+      const unixTimestamp = formatDateForContract(formData.deadline);
       const success = await createCampaign(
         account,
         formData.title,
         formData.description,
         formData.target,
         formData.repaymentAmount,
-        Math.floor(new Date(formData.deadline).getTime() / 1000),
+        unixTimestamp,
         formData.campaignType
       );
       if (success) {
@@ -115,7 +126,7 @@ const RequestFundsPage = () => {
                 placeholder="Enter the purpose you would need funds for"
                 required
               />
-              {errors.title && <p className="text-red-500">{errors.title}</p>}
+              {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
             </div>
 
             {/* Target Amount */}
@@ -153,7 +164,7 @@ const RequestFundsPage = () => {
               placeholder="Describe your campaign, including purpose, goals, and achievements"
               required
             />
-            {errors.description && <p className="text-red-500">{errors.description}</p>}
+            {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
 
             {/* Description Tips */}
             <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
@@ -189,7 +200,7 @@ const RequestFundsPage = () => {
                   } dark:border-gray-600 focus:border-purple-500 dark:focus:border-purple-500 focus:outline-none`}
                   placeholder="Enter repayment amount"
                 />
-                {errors.repaymentAmount && <p className="text-red-500">{errors.repaymentAmount}</p>}
+                {errors.repaymentAmount && <p className="text-red-500 text-sm mt-1">{errors.repaymentAmount}</p>}
               </div>
             )}
 
@@ -203,9 +214,13 @@ const RequestFundsPage = () => {
                 name="deadline"
                 value={formData.deadline}
                 onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 focus:border-purple-500 dark:focus:border-purple-500 focus:outline-none"
+                min={getMinDate()}
+                className={`w-full px-4 py-3 rounded-lg bg-gray-200 dark:bg-gray-700 border ${
+                  errors.deadline ? 'border-red-500' : 'border-gray-300'
+                } dark:border-gray-600 focus:border-purple-500 dark:focus:border-purple-500 focus:outline-none`}
                 required
               />
+              {errors.deadline && <p className="text-red-500 text-sm mt-1">{errors.deadline}</p>}
             </div>
           </div>
 
@@ -264,7 +279,7 @@ const RequestFundsPage = () => {
             className="w-full bg-purple-600 dark:bg-purple-700 text-white py-4 rounded-lg font-bold hover:bg-purple-700 dark:hover:bg-purple-800 transition duration-300"
             disabled={
               (formData.campaignType === "Loan" && !formData.repaymentPromise) || 
-              !!Object.keys(errors).length // Disable if there are validation errors
+              !!Object.keys(errors).length
             }
           >
             Submit Request
